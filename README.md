@@ -1,15 +1,17 @@
-# Vision Transformer (ViT) Model Implementation
+# 👕 ViT: Making Fashion Pixels Trendy Again 👗
+Because even AI deserves a fashion upgrade from boring CNNs!
+## What's This Fashion-Forward Code About?
+This project implements a Vision Transformer (ViT) model inspired by the groundbreaking paper "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale" by Dosovitskiy et al. But instead of using it for something serious, we're using this computational powerhouse to decide if that pixelated blob is a sandal or an ankle boot. High fashion, am I right?
+## 🧠 The Secret Sauce
+Remember when everyone said "you need convolutions for images"? Well, this ViT model says "hold my gradient tape" and processes Fashion MNIST using only self-attention. It chops up those stylish 28×28 grayscale masterpieces into 4×4 patches (fashion squares, if you will), and lets transformers do their magic.
 
-This repository contains an implementation of the **Vision Transformer (ViT)**, a novel approach to image classification using a Transformer architecture. The Vision Transformer splits images into patches and applies a standard transformer model on these patches, achieving competitive performance with traditional convolutional neural networks (CNNs).
+## 🚀 How To Make Your Computer Recognize Fashion
 
-## Introduction
+1. Clone this repo faster than a fast-fashion brand copies runway designs
+2. Run:
+   ```shell
+    python training.py
+   ```
+    
 
-The **Vision Transformer (ViT)** was introduced in the paper **[An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale](https://arxiv.org/abs/2010.11929)** by Dosovitskiy et al. Instead of using convolutional layers, ViT splits images into a sequence of patches and applies a transformer, similar to how tokens are processed in natural language processing (NLP). This repository provides an implementation of the ViT model along with the training and evaluation pipeline for image classification tasks.
-
-## Features
-
-- Implementation of Vision Transformer (ViT) model from scratch.
-- Supports customizable patch sizes and transformer hyperparameters.
-- Easily configurable for different datasets and image classification tasks.
-- Preprocessing utilities for splitting images into patches.
-- Example training, evaluation, and prediction scripts.
+4. Watch your GPU sweat through 5 epochs
