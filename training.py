@@ -7,94 +7,132 @@ from tqdm import tqdm
 import numpy as np
 
 
+import torch
+from torchvision import datasets
+from torchvision.transforms import ToTensor
+from torch.utils.data import DataLoader
+import numpy as np
+from tqdm import tqdm
+
+
 def main():
+    # -----------------------------------------------------------
+    # Load FashionMNIST dataset for training and testing
+    # -----------------------------------------------------------
     training_data = datasets.FashionMNIST(
         root="data",
         train=True,
         download=True,
-        transform= ToTensor())
+        transform=ToTensor()
+    )
 
     test_data = datasets.FashionMNIST(
         root="data",
         train=False,
         download=True,
-        transform= ToTensor())
-    
-    #Vit parameters
-    in_channels = 1
+        transform=ToTensor()
+    )
 
-    hidden_size = 16
-
-    img_size = (1,28,28)
-
-    num_classes = 10
-
-    patch_size = 4
-    batch_size = 32
-    epochs=5
+    # -----------------------------------------------------------
+    # Model and training parameters
+    # -----------------------------------------------------------
+    in_channels = 1                  # Grayscale images
+    hidden_size = 16                 # Embedding dimension
+    img_size = (1, 28, 28)           # Image dimensions (C, H, W)
+    num_classes = 10                 # Number of FashionMNIST classes
+    patch_size = 4                   # Patch size for ViT
+    batch_size = 32                  # Training batch size
+    epochs = 5                       # Number of training epochs
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = Vit(in_channels, hidden_size, img_size, num_classes, patch_size)
+    # -----------------------------------------------------------
+    # Initialize the Vision Transformer model and move to device
+    # -----------------------------------------------------------
+    model = Vit(in_channels, hidden_size, img_size, num_classes, patch_size).to(device)
 
-    #Dataloader
-    dataloader_training = DataLoader(training_data,batch_size=batch_size,shuffle=True)
+    # -----------------------------------------------------------
+    # Create DataLoaders for training and testing
+    # -----------------------------------------------------------
+    dataloader_training = DataLoader(training_data, batch_size=batch_size, shuffle=True)
+    dataloader_testing = DataLoader(test_data, batch_size=1, shuffle=False)
 
-    dataloader_testing = DataLoader(test_data,batch_size=1,shuffle=False)
-
+    # -----------------------------------------------------------
+    # Set optimizer and loss function
+    # -----------------------------------------------------------
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    criterion = torch.nn.CrossEntropyLoss()
 
-    cross_entropy = torch.nn.CrossEntropyLoss()
-
-
+    # -----------------------------------------------------------
+    # Lists for tracking training metrics
+    # -----------------------------------------------------------
     epoch_loss = []
     epoch_accuracy_training = []
 
-
-    for name,param in model.named_parameters():
+    # -----------------------------------------------------------
+    # Print model parameter names and their shapes
+    # -----------------------------------------------------------
+    for name, param in model.named_parameters():
         print(f"{name} -> {param.shape}")
 
-    for epoch in (range(epochs)):
-
+    # -----------------------------------------------------------
+    # Training loop
+    # -----------------------------------------------------------
+    for epoch in range(epochs):
+        model.train()
         training_loss = []
-        train_acc_sum = 0
-        counter = 0
-        for x,y in tqdm(dataloader_training):
+        correct_predictions = 0
+        total_samples = 0
+
+        for x, y in tqdm(dataloader_training, desc=f"Epoch {epoch+1}/{epochs}"):
+            x, y = x.to(device), y.to(device)
+
+            # Forward pass
             output = model(x)
 
-            loss = cross_entropy(output,y)
+            # Compute loss
+            loss = criterion(output, y)
+
+            # Backward pass and optimization
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            predicted = torch.argmax(output, 1)
-            train_accuracy = torch.sum(predicted == y)
+            # Compute training accuracy
+            predicted = torch.argmax(output, dim=1)
+            correct_predictions += (predicted == y).sum().item()
+            total_samples += y.size(0)
 
-            counter += x.shape[0]
-            train_acc_sum += train_accuracy
-            training_loss.append(loss.detach().cpu().item())
-        
-        print(f"Total element trained {counter}")
-        print(f"Accuracy training {train_acc_sum}")
-        print(f"Avg accuracy training {train_acc_sum/counter}")
-        print(f"Epoch {epoch} -> {np.mean(training_loss)}")
-        epoch_loss.append(np.mean(training_loss))
-        epoch_accuracy_training.append(train_accuracy/counter)
+            training_loss.append(loss.item())
 
-    testing_acc = 0
+        avg_loss = np.mean(training_loss)
+        avg_accuracy = correct_predictions / total_samples
+
+        print(f"Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}, Training Accuracy = {avg_accuracy:.4f}")
+
+        epoch_loss.append(avg_loss)
+        epoch_accuracy_training.append(avg_accuracy)
+
+    # -----------------------------------------------------------
+    # Evaluation on the test set
+    # -----------------------------------------------------------
+    model.eval()
+    testing_correct = 0
+
     with torch.no_grad():
-        for x, y in tqdm(dataloader_testing):
+        for x, y in tqdm(dataloader_testing, desc="Testing"):
+            x, y = x.to(device), y.to(device)
+
             output = model(x)
-            #loss = cross_entropy(output,y)
-            #testing_loss.append(loss.item())
-            predicted_test = torch.argmax(output, 1)
-            if (predicted_test == y):
-                testing_acc+=1
-        
+            predicted = torch.argmax(output, dim=1)
 
-    print(f"Len testing {len(dataloader_testing)}")
-    print(f"Avg accuracy testing {testing_acc/len(dataloader_testing)}")
+            if predicted.item() == y.item():
+                testing_correct += 1
 
+    total_test_samples = len(dataloader_testing)
+    test_accuracy = testing_correct / total_test_samples
+
+    print(f"Test Accuracy: {test_accuracy:.4f} ({testing_correct}/{total_test_samples})")
 
 
 if __name__ == '__main__':
